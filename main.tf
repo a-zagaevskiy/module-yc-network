@@ -13,7 +13,7 @@ provider "yandex" {
 }
 
 locals {
-  vpc_name     = "${var.env_name} ${var.vpc_name}"
+  vpc_name     = "${var.env_name}-${var.vpc_name}"
   cluster_name = "${var.cluster_name}-${var.env_name}"
 }
 
@@ -68,7 +68,7 @@ resource "yandex_vpc_subnet" "private-subnet-b" {
   network_id     = yandex_vpc_network.main.id
   v4_cidr_blocks = [var.private_subnet_b_cidr]
   zone           = "ru-central1-b"
-  name           = "${local.vpc_name}-public-subnet-b"
+  name           = "${local.vpc_name}-private-subnet-b"
   # tags = {
   #   "kubernetes.io/cluster/${local.cluster_name}" = "shared"
   #   "kubernetes.io/role/internal-elb"             = "1"
