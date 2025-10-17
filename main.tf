@@ -7,6 +7,9 @@ terraform {
   required_version = ">= 0.13"
 }
 
+provider "yandex" {
+  zone = var.yandex_zone
+}
 
 locals {
   vpc_name     = "${var.env_name}-${var.vpc_name}"

@@ -2,7 +2,7 @@ variable "env_name" {
   type = string
 }
 
-variable "yandex_region" {
+variable "yandex_zone" {
   type = string
 }
 
