@@ -27,53 +27,7 @@ resource "yandex_vpc_network" "main" {
   # }
 }
 
-# Определение подсети
-
-## нет аналога "aws_availability_zones" в Yandex Cloud
-
-resource "yandex_vpc_subnet" "public-subnet-a" {
-  network_id     = yandex_vpc_network.main.id
-  v4_cidr_blocks = [var.public_subnet_a_cidr]
-  zone           = "ru-central1-d"
-  name           = "${local.vpc_name}-public-subnet-a"
-  # tags = {
-  #   "kubernetes.io/cluster/${local.cluster_name}" = "shared"
-  #   "kubernetes.io/role/elb"                      = "1"
-  # }
-}
-
-resource "yandex_vpc_subnet" "public-subnet-b" {
-  network_id     = yandex_vpc_network.main.id
-  v4_cidr_blocks = [var.public_subnet_b_cidr]
-  zone           = "ru-central1-b"
-  name           = "${local.vpc_name}-public-subnet-b"
-  # tags = {
-  #   "kubernetes.io/cluster/${local.cluster_name}" = "shared"
-  #   "kubernetes.io/role/elb"                      = "1"
-  # }
-}
-
-resource "yandex_vpc_subnet" "private-subnet-a" {
-  network_id     = yandex_vpc_network.main.id
-  v4_cidr_blocks = [var.private_subnet_a_cidr]
-  zone           = "ru-central1-d"
-  name           = "${local.vpc_name}-private-subnet-a"
-  # tags = {
-  #   "kubernetes.io/cluster/${local.cluster_name}" = "shared"
-  #   "kubernetes.io/role/internal-elb"             = "1"
-  # }
-}
-
-resource "yandex_vpc_subnet" "private-subnet-b" {
-  network_id     = yandex_vpc_network.main.id
-  v4_cidr_blocks = [var.private_subnet_b_cidr]
-  zone           = "ru-central1-b"
-  name           = "${local.vpc_name}-private-subnet-b"
-  # tags = {
-  #   "kubernetes.io/cluster/${local.cluster_name}" = "shared"
-  #   "kubernetes.io/role/internal-elb"             = "1"
-  # }
-}
+## !! нет аналога "aws_availability_zones" в Yandex Cloud
 
 # Интернет-шлюз и таблицы маршрутизации для общедоступных подсетей
 
@@ -83,12 +37,92 @@ resource "yandex_vpc_gateway" "igw" {
 }
 
 resource "yandex_vpc_route_table" "public-route" {
+  name = "${local.vpc_name}-public-route"
   network_id = yandex_vpc_network.main.id
   static_route {
     destination_prefix = "0.0.0.0/0"
     gateway_id         = yandex_vpc_gateway.igw.id
   }
-  name = "${local.vpc_name}-public-route"
+}
+
+# 
+
+resource "yandex_vpc_address" "nat-a" {
+  name = "${local.vpc_name}-NAT-a"
+  external_ipv4_address {
+    zone_id = "ru-central1-d"
+  }
+}
+
+resource "yandex_vpc_address" "nat-b" {
+  name = "${local.vpc_name}-NAT-b"
+  external_ipv4_address {
+    zone_id = "ru-central1-b"
+  }
+}
+
+resource "yandex_vpc_gateway" "nat_gateway" {
+  name = "${local.vpc_name}-nat-gateway"
+  shared_egress_gateway {}
+}
+
+resource "yandex_vpc_route_table" "private-route" {
+  name = "${local.vpc_name}-private-route"
+  network_id = yandex_vpc_network.main.id
+  static_route {
+    destination_prefix = "0.0.0.0/0"
+    gateway_id = yandex_vpc_gateway.nat_gateway.id
+  }
+}
+
+# Определение подсети
+
+resource "yandex_vpc_subnet" "public-subnet-a" {
+  name           = "${local.vpc_name}-public-subnet-a"
+  zone           = "ru-central1-d"
+  network_id     = yandex_vpc_network.main.id
+  v4_cidr_blocks = [var.public_subnet_a_cidr]
+  route_table_id = yandex_vpc_route_table.public-route.id
+  # tags = {
+  #   "kubernetes.io/cluster/${local.cluster_name}" = "shared"
+  #   "kubernetes.io/role/elb"                      = "1"
+  # }
+}
+
+resource "yandex_vpc_subnet" "public-subnet-b" {
+  name           = "${local.vpc_name}-public-subnet-b"
+  zone           = "ru-central1-b"
+  network_id     = yandex_vpc_network.main.id
+  v4_cidr_blocks = [var.public_subnet_b_cidr]
+  route_table_id = yandex_vpc_route_table.public-route.id
+  # tags = {
+  #   "kubernetes.io/cluster/${local.cluster_name}" = "shared"
+  #   "kubernetes.io/role/elb"                      = "1"
+  # }
+}
+
+resource "yandex_vpc_subnet" "private-subnet-a" {
+  name           = "${local.vpc_name}-private-subnet-a"
+  zone           = "ru-central1-d"
+  network_id     = yandex_vpc_network.main.id
+  v4_cidr_blocks = [var.private_subnet_a_cidr]
+  route_table_id = yandex_vpc_route_table.private-route.id
+  # tags = {
+  #   "kubernetes.io/cluster/${local.cluster_name}" = "shared"
+  #   "kubernetes.io/role/internal-elb"             = "1"
+  # }
+}
+
+resource "yandex_vpc_subnet" "private-subnet-b" {
+  name           = "${local.vpc_name}-private-subnet-b"
+  zone           = "ru-central1-b"
+  network_id     = yandex_vpc_network.main.id
+  v4_cidr_blocks = [var.private_subnet_b_cidr]
+  route_table_id = yandex_vpc_route_table.private-route.id
+  # tags = {
+  #   "kubernetes.io/cluster/${local.cluster_name}" = "shared"
+  #   "kubernetes.io/role/internal-elb"             = "1"
+  # }
 }
 
 #  ...
