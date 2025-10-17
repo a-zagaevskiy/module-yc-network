@@ -8,10 +8,6 @@ terraform {
 }
 
 
-provider "yandex" {
-  zone = "ru-central1-d"
-}
-
 locals {
   vpc_name     = "${var.env_name}-${var.vpc_name}"
   cluster_name = "${var.cluster_name}-${var.env_name}"
